@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOEIC 연습 퀴즈</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+    padding: 2.5rem 2rem;
+    max-width: 620px;
+    width: 100%;
+  }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+  .title { font-size: 20px; font-weight: 700; color: #1a2340; }
+  .q-counter { font-size: 13px; color: #7a8aaa; }
+  .progress-bg { height: 7px; background: #e8edf5; border-radius: 99px; margin-bottom: 1.4rem; }
+  .progress-fill { height: 7px; background: linear-gradient(90deg, #4f8ef7, #6dd5fa); border-radius: 99px; transition: width 0.35s; }
+  .badges { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .badge {
+    font-size: 12px; padding: 3px 12px; border-radius: 99px; font-weight: 500;
+  }
+  .badge-part { background: #e8f0fe; color: #2d5be3; }
+  .badge-grammar { background: #fff4e0; color: #b06a00; }
+  .badge-vocab { background: #e6f9f0; color: #1a7a4a; }
+  .q-text { font-size: 17px; color: #1a2340; line-height: 1.75; margin-bottom: 1.5rem; font-weight: 500; }
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+  .opt-btn {
+    text-align: left; padding: 13px 18px;
+    border: 1.5px solid #dde3f0; border-radius: 12px;
+    background: #f8faff; color: #1a2340;
+    font-size: 15px; font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .opt-btn:hover { background: #eef2ff; border-color: #4f8ef7; }
+  .opt-btn.correct { background: #e6f9f0; border-color: #2db87a; color: #145c3a; }
+  .opt-btn.wrong { background: #fff0f0; border-color: #e05555; color: #8b1a1a; }
+  .opt-btn:disabled { cursor: default; }
+  .feedback {
+    padding: 14px 16px; border-radius: 12px;
+    font-size: 14px; line-height: 1.65;
+    margin-bottom: 1.3rem; display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #e6f9f0; color: #145c3a; border: 1px solid #2db87a; }
+  .feedback.no { background: #fff0f0; color: #8b1a1a; border: 1px solid #e05555; }
+  .nav { display: flex; justify-content: flex-end; }
+  .btn-next {
+    padding: 11px 28px; border-radius: 10px;
+    border: none; background: #4f8ef7; color: #fff;
+    font-size: 15px; font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 500; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-next:disabled { background: #c5d3f0; cursor: default; }
+  .btn-next:not(:disabled):hover { background: #2d6fe0; }
+
+  /* Result */
+  .result { text-align: center; padding: 1rem 0; }
+  .score-ring {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 5px solid #4f8ef7;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 1.4rem;
+  }
+  .score-num { font-size: 34px; font-weight: 700; color: #2d5be3; }
+  .score-denom { font-size: 14px; color: #7a8aaa; }
+  .res-msg { font-size: 17px; color: #1a2340; margin-bottom: 1.5rem; font-weight: 500; }
+  .part-scores { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.8rem; }
+  .ps-card { background: #f0f4f8; border-radius: 12px; padding: 14px 8px; }
+  .ps-label { font-size: 12px; color: #7a8aaa; margin-bottom: 5px; }
+  .ps-val { font-size: 22px; font-weight: 700; color: #1a2340; }
+  .btn-restart {
+    padding: 12px 32px; border-radius: 10px;
+    border: 1.5px solid #4f8ef7; background: #fff;
+    color: #4f8ef7; font-size: 15px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-restart:hover { background: #4f8ef7; color: #fff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="quiz-screen">
+    <div class="top-bar">
+      <span class="title">TOEIC 연습 문제</span>
+      <span class="q-counter" id="q-counter">1 / 15</span>
+    </div>
+    <div class="progress-bg"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="badges">
+      <span class="badge badge-part" id="badge-part"></span>
+      <span class="badge" id="badge-type"></span>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="nav">
+      <button class="btn-next" id="btn-next" disabled>다음 문제 →</button>
+    </div>
+  </div>
+
+  <div id="result-screen" style="display:none">
+    <div class="result">
+      <div class="score-ring">
+        <span class="score-num" id="res-num"></span>
+        <span class="score-denom">/ 15</span>
+      </div>
+      <div class="res-msg" id="res-msg"></div>
+      <div class="part-scores">
+        <div class="ps-card"><div class="ps-label">HR</div><div class="ps-val" id="ps-hr"></div></div>
+        <div class="ps-card"><div class="ps-label">Finance</div><div class="ps-val" id="ps-fin"></div></div>
+        <div class="ps-card"><div class="ps-label">Economics</div><div class="ps-val" id="ps-eco"></div></div>
+      </div>
+      <button class="btn-restart" onclick="restart()">다시 풀기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { part:"PART 1 — Human Resources", type:"문법",
+    q:"HR professionals oversee _______ aspects of an employee's experience within a company.",
+    opts:["all","every","each","whole"], ans:0,
+    ex:"'all aspects(모든 측면)'이 올바른 표현입니다. every/each는 단수명사와 함께 쓰이고, whole은 관사 없이 쓸 수 없습니다." },
+  { part:"PART 1 — Human Resources", type:"문법",
+    q:"When necessary, HR managers are also responsible _______ termination of unsatisfactory employees.",
+    opts:["of","by","for","with"], ans:2,
+    ex:"'responsible for(~에 책임이 있다)'는 고정 전치사 표현입니다. responsible of/by/with는 잘못된 표현입니다." },
+  { part:"PART 1 — Human Resources", type:"문법",
+    q:"HR developed _______ a professional field during the 20th century.",
+    opts:["like","as","for","into"], ans:1,
+    ex:"'develop as(~로 발전하다)'가 올바른 표현입니다. like는 비교, for는 목적, into는 변화를 나타냅니다." },
+  { part:"PART 1 — Human Resources", type:"문법",
+    q:"Once a new employee _______ hired, the HR team oversees onboarding.",
+    opts:["is","are","were","be"], ans:0,
+    ex:"'a new employee'는 단수 주어이므로 수동태 'is hired'가 올바릅니다. are/were는 복수, be는 단독으로 쓸 수 없습니다." },
+  { part:"PART 1 — Human Resources", type:"문법",
+    q:"HR professionals serve as a company's representatives in negotiations _______ collective bargaining units.",
+    opts:["to","of","by","with"], ans:3,
+    ex:"'negotiations with(~와의 협상)'가 올바른 전치사 표현입니다. to/of/by는 negotiations와 어울리지 않습니다." },
+  { part:"PART 2 — MBA Internships", type:"문법",
+    q:"Interns are not hired to make coffee and run errands, _______ to work on projects with finance professionals.",
+    opts:["or","but","so","and"], ans:1,
+    ex:"'not A but B(A가 아니라 B)' 구문입니다. 커피 심부름이 아니라 프로젝트를 위해 채용된다는 대조를 나타냅니다." },
+  { part:"PART 2 — MBA Internships", type:"문법",
+    q:"Every year Franklin-Burrows selects MBA students _______ participate in its Finance Internship Program.",
+    opts:["for","of","to","at"], ans:2,
+    ex:"'select + 목적어 + to부정사(~하도록 선발하다)' 구문입니다. to participate가 올바른 표현입니다." },
+  { part:"PART 2 — MBA Internships", type:"문법",
+    q:"Interns _______ considered part of the finance team during the program.",
+    opts:["is","are","was","be"], ans:1,
+    ex:"주어 'Interns'는 복수이므로 'are considered'가 올바릅니다. is/was는 단수, be는 단독으로 쓸 수 없습니다." },
+  { part:"PART 2 — MBA Internships", type:"문법",
+    q:"The internship is about education, _______ is why interns work on projects with finance professionals.",
+    opts:["that","what","which","who"], ans:2,
+    ex:"앞 문장 전체를 선행사로 받는 관계대명사는 'which'입니다. that은 계속적 용법 불가, what은 선행사 불필요, who는 사람에만 씁니다." },
+  { part:"PART 2 — MBA Internships", type:"문법",
+    q:"Interns interact with senior management, interns from other schools, _______ past program participants.",
+    opts:["or","but","so","and"], ans:3,
+    ex:"세 가지 대상을 나열할 때 마지막에 'and'를 씁니다." },
+  { part:"PART 3 — Economics 101", type:"문법",
+    q:"ECON 101 is an in-depth study of modern behavior in _______ endeavor to fulfill needs and wants.",
+    opts:["a","an","the","(없음)"], ans:0,
+    ex:"'endeavor'는 자음으로 시작하므로 부정관사 'a'를 씁니다. an은 모음 앞, the는 특정 대상 앞에 씁니다." },
+  { part:"PART 3 — Economics 101", type:"문법",
+    q:"How do decisions made in one household or business influence _______ wider economy?",
+    opts:["a","an","the","(없음)"], ans:2,
+    ex:"'the wider economy(더 넓은 경제)'는 문맥상 특정한 대상을 가리키므로 정관사 'the'를 씁니다." },
+  { part:"PART 3 — Economics 101", type:"문법",
+    q:"Modern citizens make choices every day about the goods and services _______ they purchase.",
+    opts:["who","whom","whose","that"], ans:3,
+    ex:"선행사 'goods and services'를 수식하는 목적격 관계대명사 'that'이 올바릅니다. who/whom은 사람에만, whose는 소유격에 씁니다." },
+  { part:"PART 3 — Economics 101", type:"문법",
+    q:"The course concludes _______ an in-depth discussion of opportunity cost.",
+    opts:["by","with","for","in"], ans:1,
+    ex:"'conclude with(~로 마무리하다)'가 올바른 전치사 표현입니다. by/for/in은 conclude와 어울리지 않습니다." },
+  { part:"PART 3 — Economics 101", type:"어휘",
+    q:"The limited availability of resources relative to needs and wants is called _______.",
+    opts:["elasticity","depreciation","scarcity","allocation"], ans:2,
+    ex:"필요와 욕구에 비해 자원의 가용성이 제한된 것을 'scarcity(희소성)'라고 합니다. elasticity는 탄력성, depreciation은 감가상각, allocation은 배분입니다." }
+];
+
+let cur = 0, score = 0, ps = [0,0,0], answered = false;
+
+function partIdx(p) {
+  if (p.includes("Human")) return 0;
+  if (p.includes("MBA")) return 1;
+  return 2;
+}
+
+function render() {
+  const q = questions[cur];
+  document.getElementById("q-counter").textContent = (cur+1) + " / 15";
+  document.getElementById("prog").style.width = (cur/15*100) + "%";
+  document.getElementById("badge-part").textContent = q.part;
+  const tb = document.getElementById("badge-type");
+  tb.textContent = q.type === "어휘" ? "어휘 문제" : "문법 문제";
+  tb.className = "badge " + (q.type === "어휘" ? "badge-vocab" : "badge-grammar");
+  document.getElementById("q-text").textContent = "Q" + (cur+1) + ". " + q.q;
+  const labels = ["(A)","(B)","(C)","(D)"];
+  const opts = document.getElementById("options");
+  opts.innerHTML = "";
+  q.opts.forEach((o,i) => {
+    const b = document.createElement("button");
+    b.className = "opt-btn";
+    b.textContent = labels[i] + " " + o;
+    b.onclick = () => pick(i);
+    opts.appendChild(b);
+  });
+  const fb = document.getElementById("feedback");
+  fb.className = "feedback";
+  fb.textContent = "";
+  document.getElementById("btn-next").disabled = true;
+  answered = false;
+}
+
+function pick(i) {
+  if (answered) return;
+  answered = true;
+  const q = questions[cur];
+  const btns = document.querySelectorAll(".opt-btn");
+  btns.forEach((b,idx) => {
+    b.disabled = true;
+    if (idx === q.ans) b.classList.add("correct");
+    else if (idx === i) b.classList.add("wrong");
+  });
+  const fb = document.getElementById("feedback");
+  if (i === q.ans) {
+    score++; ps[partIdx(q.part)]++;
+    fb.className = "feedback ok show";
+    fb.textContent = "✓ 정답입니다! " + q.ex;
+  } else {
+    fb.className = "feedback no show";
+    fb.textContent = "✗ 오답입니다. " + q.ex;
+  }
+  document.getElementById("btn-next").disabled = false;
+}
+
+document.getElementById("btn-next").onclick = () => {
+  cur++;
+  if (cur >= questions.length) showResult();
+  else render();
+};
+
+function showResult() {
+  document.getElementById("quiz-screen").style.display = "none";
+  document.getElementById("result-screen").style.display = "block";
+  document.getElementById("prog").style.width = "100%";
+  document.getElementById("res-num").textContent = score;
+  const msgs = ["다시 한번 도전해보세요! 할 수 있어요 💪","절반 이상 맞추셨어요! 복습이 필요해요 📖","잘 하셨어요! 조금만 더 하면 완벽해요 👍","훌륭합니다! 거의 완벽해요! 🎉","만점입니다! 완벽해요! 🏆"];
+  const idx = score <= 5 ? 0 : score <= 9 ? 1 : score <= 11 ? 2 : score <= 14 ? 3 : 4;
+  document.getElementById("res-msg").textContent = msgs[idx];
+  document.getElementById("ps-hr").textContent = ps[0] + "/5";
+  document.getElementById("ps-fin").textContent = ps[1] + "/5";
+  document.getElementById("ps-eco").textContent = ps[2] + "/5";
+}
+
+function restart() {
+  cur = 0; score = 0; ps = [0,0,0];
+  document.getElementById("result-screen").style.display = "none";
+  document.getElementById("quiz-screen").style.display = "block";
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
